@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
 
-namespace TPCWare.CarLocator
+namespace TPCWare.CarLocator.Views
 {
     public partial class MainPage : ContentPage
     {
