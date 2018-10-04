@@ -14,7 +14,7 @@ namespace TPCWare.CarLocator
         {
             // Initialize Live Reload.
 #if DEBUG
-            LiveReload.Init();
+            // LiveReload.Init();
 #endif
 
             InitializeComponent();
