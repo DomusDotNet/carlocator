@@ -1,14 +1,102 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:TPCWare.CarLocator"
-             x:Class="TPCWare.CarLocator.Views.MainPage">
+<views:BasePage  x:Class="TPCWare.CarLocator.Views.MainPage"
+                     xmlns="http://xamarin.com/schemas/2014/forms"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                     xmlns:views="clr-namespace:TPCWare.CarLocator.Views"
+                     xmlns:vm="clr-namespace:TPCWare.CarLocator.ViewModels"
+                     xmlns:conv="clr-namespace:TPCWare.CarLocator.Converters"
+                     xmlns:maps="clr-namespace:Xamarin.Forms.Maps;assembly=Xamarin.Forms.Maps">
 
-    <StackLayout>
-        <!-- Place new controls here -->
-        <Label Text="Welcome to Xamarin.Forms!" 
-           HorizontalOptions="Center"
-           VerticalOptions="CenterAndExpand" />
-    </StackLayout>
+    <views:BasePage.BindingContext>
+        <vm:MainViewModel />
+    </views:BasePage.BindingContext>
 
-</ContentPage>
+    <views:BasePage.Resources>
+        <conv:NegativeConverter x:Key="NegativeConverter" />
+    </views:BasePage.Resources>
+
+
+    <Grid HorizontalOptions="FillAndExpand"
+          VerticalOptions="FillAndExpand"
+          RowSpacing="0" ColumnSpacing="0" 
+          Margin="{OnPlatform Default='0,0,0,0', iOS='0,20,0,0'}">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0"
+               Text="Car Locator" 
+               HorizontalOptions="Center"
+               VerticalOptions="Center" />
+
+        <Label Grid.Row="1"
+               Text="La posizione della macchina non è stata ancora registrata"
+               HorizontalTextAlignment="Center"
+               HorizontalOptions="Center"
+               VerticalOptions="CenterAndExpand"
+               IsVisible="{Binding CarLocationAvailable, Converter={StaticResource Key=NegativeConverter}}"/>
+
+        <Grid Grid.Row="2"
+              VerticalOptions="FillAndExpand" 
+              HorizontalOptions="FillAndExpand"
+              RowSpacing="0" ColumnSpacing="0" 
+              IsVisible="{Binding CarLocationAvailable}">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackLayout Grid.Row="0"
+                         Padding="0" Spacing="0"
+                         Orientation="Horizontal"
+                         HorizontalOptions="Center"
+                         VerticalOptions="Center">
+
+                <Label Text="Posizione: " 
+                       Margin="0,20,0,0"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Start" />
+
+                <Label Text="{Binding CarPositionGeoCoordinates}" 
+                       Margin="0,20,0,0"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Start" />
+            </StackLayout>
+
+            <StackLayout Grid.Row="1"
+                         Padding="0" Spacing="0"
+                         Orientation="Horizontal"
+                         HorizontalOptions="Center"
+                         VerticalOptions="Center">
+
+                <Label Text="Registrata il: " 
+                       Margin="0,20,0,0"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Start" />
+
+                <Label Text="{Binding CarPositionTimestamp}" 
+                       Margin="0,20,0,0"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Start" />
+            </StackLayout>
+            
+            <maps:Map x:Name="MyMap" Grid.Row="2"
+                      Margin="10"
+                      IsShowingUser="False" 
+                      MapType="Street"
+                      HeightRequest="300"/>
+        </Grid>
+        
+        <Button Grid.Row="3"
+                Text="Aggiorna la posizione"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Clicked="SetPosition_Clicked"/>
+    </Grid>
+</views:BasePage>

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TPCWare.CarLocator.Models;
 using Xamarin.Essentials;
+using Xamarin.Forms.Maps;
 
 namespace TPCWare.CarLocator.ViewModels
 {
@@ -16,9 +17,22 @@ namespace TPCWare.CarLocator.ViewModels
 
         #region Properties
 
+        private Location carLocation = Settings.GetCarLocation();
+        public Location CarLocation
+        {
+            get => carLocation;
+            set => SetProperty(ref carLocation, value, onChanged: () =>
+            {
+                OnPropertyChanged(nameof(CarLocationAvailable));
+                OnPropertyChanged(nameof(CarPositionGeoCoordinates));
+                OnPropertyChanged(nameof(CarPositionTimestamp));
+            });
+        }
+
         public bool CarLocationAvailable => (CarLocation != null);
 
-        public Location CarLocation => Settings.GetCarLocation();
+        public string CarPositionGeoCoordinates => $"{CarLocation?.Latitude.ToString("###.00")}, {CarLocation?.Longitude.ToString("###.00")}";
+        public string CarPositionTimestamp => $"{CarLocation?.TimestampUtc.ToLocalTime().ToString("dd/MM/yy hh:mm")}";
 
         #endregion
 
@@ -26,7 +40,7 @@ namespace TPCWare.CarLocator.ViewModels
         {
         }
 
-        public async Task SetNewCarLocation()
+        public async Task SetNewCarLocationAsync()
         {
             Location location = await GetGeoLocationAsync();
             if (location == null)
@@ -37,11 +51,33 @@ namespace TPCWare.CarLocator.ViewModels
             else
             {
                 // Update car location
+                await DisplayAlertAsync(location.TimestampUtc.ToString());
                 Settings.SetCarLocation(location);
-
-                // Update MapView
-                // TODO
+                CarLocation = location;
             }
+        }
+
+        public async Task UpdateMapAsync(Map map)
+        {
+            Location userLocation = await GetGeoLocationAsync();
+            Location carLocation = Settings.GetCarLocation();
+            var km = (userLocation == null || carLocation == null) ? 1 : Location.CalculateDistance(userLocation.Latitude,
+                                                                                                    carLocation.Latitude,
+                                                                                                    userLocation.Longitude,
+                                                                                                    carLocation.Longitude,
+                                                                                                    DistanceUnits.Kilometers);
+            km = Math.Min(1, Math.Max(500, km));
+            map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(userLocation.Latitude, userLocation.Longitude), new Distance(1000 * km)));
+
+            var carPin = new Pin()
+            {
+                Type = PinType.SavedPin,
+                Position = new Position(carLocation.Latitude, carLocation.Longitude),
+                Label = "La mia macchina"
+            };
+
+            map.Pins.Clear();
+            map.Pins.Add(carPin);
         }
 
         public async Task<Location> GetGeoLocationAsync()
@@ -80,5 +116,6 @@ namespace TPCWare.CarLocator.ViewModels
 
             return location;
         }
+
     }
 }
