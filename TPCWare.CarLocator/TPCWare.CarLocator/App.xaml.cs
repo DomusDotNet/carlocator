@@ -7,8 +7,15 @@ namespace TPCWare.CarLocator
 {
     public partial class App : Application
     {
+
+
         public App()
         {
+            // Initialize Live Reload.
+#if DEBUG
+            LiveReload.Init();
+#endif
+
             InitializeComponent();
 
             MainPage = new MainPage();
