@@ -24,15 +24,17 @@ namespace TPCWare.CarLocator.Views
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            await vm?.UpdateMapAsync(MyMap);
+            if (vm != null)
+            {
+                await vm.UpdateMapAsync(MyMap);
+            }
         }
 
         private async void SetPosition_Clicked(object sender, EventArgs e)
         {
             if (vm != null)
             {
-                await vm.SetNewCarLocationAsync();
-                await vm.UpdateMapAsync(MyMap);
+                await vm.SetNewCarLocationAsync(MyMap);     
             }
         }
         

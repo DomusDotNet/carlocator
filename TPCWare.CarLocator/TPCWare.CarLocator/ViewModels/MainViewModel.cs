@@ -40,20 +40,18 @@ namespace TPCWare.CarLocator.ViewModels
         {
         }
 
-        public async Task SetNewCarLocationAsync()
+        public async Task SetNewCarLocationAsync(Map map)
         {
             Location location = await GetGeoLocationAsync();
-            if (location == null)
-            {
-                // Show error
-                // TODO
-            }
-            else
+            if (location != null)
             {
                 // Update car location
                 await DisplayAlertAsync(location.TimestampUtc.ToString());
                 Settings.SetCarLocation(location);
                 CarLocation = location;
+
+                // Update Map
+                await UpdateMapAsync(map);
             }
         }
 
@@ -61,57 +59,75 @@ namespace TPCWare.CarLocator.ViewModels
         {
             Location userLocation = await GetGeoLocationAsync();
             Location carLocation = Settings.GetCarLocation();
-            var km = (userLocation == null || carLocation == null) ? 1 : Location.CalculateDistance(userLocation.Latitude,
-                                                                                                    carLocation.Latitude,
-                                                                                                    userLocation.Longitude,
-                                                                                                    carLocation.Longitude,
-                                                                                                    DistanceUnits.Kilometers);
-            km = Math.Min(1, Math.Max(500, km));
+
+            var km = (userLocation == null || carLocation == null)
+                ? 1.0
+                : Location.CalculateDistance(userLocation, carLocation, DistanceUnits.Kilometers);
+
+            km = Math.Min(0.2, km);
+
             map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(userLocation.Latitude, userLocation.Longitude), new Distance(1000 * km)));
 
-            var carPin = new Pin()
+            if (carLocation != null)
             {
-                Type = PinType.SavedPin,
-                Position = new Position(carLocation.Latitude, carLocation.Longitude),
-                Label = "La mia macchina"
-            };
+                var carPin = new Pin()
+                {
+                    Type = PinType.SavedPin,
+                    Position = new Position(carLocation.Latitude, carLocation.Longitude),
+                    Label = "La mia macchina"
+                };
 
-            map.Pins.Clear();
-            map.Pins.Add(carPin);
+                map.Pins.Clear();
+                map.Pins.Add(carPin);
+            }
         }
 
         public async Task<Location> GetGeoLocationAsync()
         {
             Location location = null;
+            if (IsNotBusy)
+            {
+                IsBusy = true;
+                try
+                {
+                    var request = new GeolocationRequest(Constants.GPS_ACCURACY);
+                    cts = new CancellationTokenSource();
+                    location = await Geolocation.GetLocationAsync(request, cts.Token);
+                }
+                catch (FeatureNotSupportedException fnsEx)
+                {
+                    // Handle not supported on device exception
+                    gpsException = fnsEx;
+                    resultMessage = "GPS non disponibile in questo device.";
+                }
+                catch (PermissionException pEx)
+                {
+                    // Handle permission exception
+                    gpsException = pEx;
+                    resultMessage = "Devi attivare il GPS per vedere la lista.";
+                }
+                catch (Exception ex)
+                {
+                    // Unable to get location
+                    gpsException = ex;
+                    resultMessage = $"Impossibile recuperare la tua posizione dal GPS. ({ex.Message})";
+                }
+                finally
+                {
+                    cts.Dispose();
+                    cts = null;
+                    IsBusy = false;
+                }
+            }
+            else
+            {
+                resultMessage = $"Una precedente richiesta posizione dal GPS è già in corso.";
+            }
 
-            try
-            {
-                var request = new GeolocationRequest(Constants.GPS_ACCURACY);
-                cts = new CancellationTokenSource();
-                location = await Geolocation.GetLocationAsync(request, cts.Token);
-            }
-            catch (FeatureNotSupportedException fnsEx)
-            {
-                // Handle not supported on device exception
-                gpsException = fnsEx;
-                resultMessage = "GPS non disponibile in questo device.";
-            }
-            catch (PermissionException pEx)
-            {
-                // Handle permission exception
-                gpsException = pEx;
-                resultMessage = "Devi attivare il GPS per vedere la lista.";
-            }
-            catch (Exception ex)
-            {
-                // Unable to get location
-                gpsException = ex;
-                resultMessage = $"Impossibile recuperare la tua posizione dal GPS. ({ex.Message})";
-            }
-            finally
-            {
-                cts.Dispose();
-                cts = null;
+            if (location == null)
+            { 
+                // Show error
+                await DisplayAlertAsync(resultMessage);
             }
 
             return location;
