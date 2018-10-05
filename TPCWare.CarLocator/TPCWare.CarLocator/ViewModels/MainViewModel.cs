@@ -64,7 +64,7 @@ namespace TPCWare.CarLocator.ViewModels
                 ? 1.0
                 : Location.CalculateDistance(userLocation, carLocation, DistanceUnits.Kilometers);
 
-            km = Math.Min(0.2, km);
+            km = Math.Min(0.5, km);
 
             map.MoveToRegion(MapSpan.FromCenterAndRadius(new Position(userLocation.Latitude, userLocation.Longitude), new Distance(1000 * km)));
 
